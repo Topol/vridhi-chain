@@ -21,3 +21,4 @@ Some of the main course highlights:
 - Sign Transactions with cryptography and digital signature.
 - Create a Transaction Pool for a real-time list of incoming data.
 - Include transactions in core blocks of the chain.
+# vridhi-chain
