@@ -94,7 +94,7 @@ app.post('/api/odkmine', (req, res) => {
 
   //mine the transaction
   transactionMiner.mineTransactions();
- res.redirect('/blocks');
+ res.redirect('/');
 });
 
 
