@@ -144,6 +144,16 @@ app.get('/api/wallet-info', (req, res) => {
   });
 });
 
+app.post('/api/wallet-data', (req, res) => {
+  //const address = wallet.publicKey;
+  const address = "0536df828b033c21c58add846baf87775c2da1a0ad0995a207c5cc75907c2747940d11c32fc445688246d7b4fa3fd06b30e9100360ea52324151463e9430395323";
+
+  res.json({
+    address,
+    balance: Wallet.calculateBalance({ chain: blockchain.chain, address })
+  });
+});
+
 app.get('/api/known-addresses', (req, res) => {
   const addressMap = {};
 
