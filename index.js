@@ -60,6 +60,44 @@ app.post('/api/mine', (req, res) => {
   res.redirect('/api/blocks');
 });
 
+app.post('/api/odkmine', (req, res) => {
+  const newData = JSON.stringify(req.body);
+  //const block = new Block({ timestamp, lastHash, hash, data, nonce, difficulty });
+  //blockchain.addBlock(block);
+  blockchain.addBlock({ data: newData });
+
+  //give some amount for the transaction
+  const amount = 50;
+  const recipient = "0536df828b033c21c58add846baf87775c2da1a0ad0995a207c5cc75907c2747940d11c32fc445688246d7b4fa3fd06b30e9100360ea52324151463e9430395323";
+  //const address: this.publicKey;
+  let transaction2 = transactionPool.existingTransaction({ inputAddress: wallet.publicKey });
+
+  try {
+    if (transaction2) {
+      transaction2.update({ senderWallet: wallet, recipient, amount });
+    } else {
+      transaction2 = wallet.createTransaction({
+        recipient,
+        amount,
+        chain: blockchain.chain
+      });
+    }
+  } catch(error) {
+    return res.status(400).json({ type: 'error', message: error.message });
+  }
+
+  transactionPool.setTransaction(transaction2);
+
+  pubsub.broadcastTransaction(transaction2);
+
+  res.json({ type: 'success', transaction2 });
+
+  //mine the transaction
+  transactionMiner.mineTransactions();
+ res.redirect('/blocks');
+});
+
+
 app.post('/api/transact', (req, res) => {
   const { amount, recipient } = req.body;
 
