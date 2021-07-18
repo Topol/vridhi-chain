@@ -70,6 +70,14 @@ class PubSub {
       message: JSON.stringify(transaction)
     });
   }
+
+  broadcastTransactionODK(transaction, data) {
+    this.publish({
+      channel: CHANNELS.TRANSACTION,
+      message: JSON.stringify(transaction).concat(data)
+
+    });
+  }
 }
 
 module.exports = PubSub;

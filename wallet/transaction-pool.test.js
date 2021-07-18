@@ -1,5 +1,6 @@
 const TransactionPool = require('./transaction-pool');
 const Transaction = require('./transaction');
+const TransactionBlock = require('./transaction-block');
 const Wallet = require('./index');
 const Blockchain = require('../blockchain');
 
@@ -13,6 +14,17 @@ describe('TransactionPool', () => {
       senderWallet,
       recipient: 'fake-recipient',
       amount: 50
+    });
+  });
+
+  beforeEach(() => {
+    transactionPool = new TransactionPool();
+    senderWallet = new Wallet();
+    transaction = new TransactionBlock({
+      senderWallet,
+      recipient: 'fake-recipient',
+      amount: 50,
+      data: "Hello World"
     });
   });
 

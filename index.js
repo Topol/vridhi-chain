@@ -3,10 +3,12 @@ const express = require('express');
 const request = require('request');
 const path = require('path');
 const Blockchain = require('./blockchain');
+const Block = require('./blockchain/block');
 const PubSub = require('./app/pubsub');
 const TransactionPool = require('./wallet/transaction-pool');
 const Wallet = require('./wallet');
 const TransactionMiner = require('./app/transaction-miner');
+const Transaction = require('./wallet/transaction');
 
 const isDevelopment = process.env.ENV === 'development';
 
@@ -60,49 +62,11 @@ app.post('/api/mine', (req, res) => {
   res.redirect('/api/blocks');
 });
 
-app.post('/api/odkmine', (req, res) => {
-  const newData = JSON.stringify(req.body);
-  //const block = new Block({ timestamp, lastHash, hash, data, nonce, difficulty });
-  //blockchain.addBlock(block);
-  blockchain.addBlock({ data: newData });
-
-  //give some amount for the transaction
-  const amount = 50;
-  const recipient = "0536df828b033c21c58add846baf87775c2da1a0ad0995a207c5cc75907c2747940d11c32fc445688246d7b4fa3fd06b30e9100360ea52324151463e9430395323";
-  //const address: this.publicKey;
-  let transaction2 = transactionPool.existingTransaction({ inputAddress: wallet.publicKey });
-
-  try {
-    if (transaction2) {
-      transaction2.update({ senderWallet: wallet, recipient, amount });
-    } else {
-      transaction2 = wallet.createTransaction({
-        recipient,
-        amount,
-        chain: blockchain.chain
-      });
-    }
-  } catch(error) {
-    return res.status(400).json({ type: 'error', message: error.message });
-  }
-
-  transactionPool.setTransaction(transaction2);
-
-  pubsub.broadcastTransaction(transaction2);
-
-  res.json({ type: 'success', transaction2 });
-
-  //mine the transaction
-  transactionMiner.mineTransactions();
- res.redirect('/');
-});
-
-
 app.post('/api/transact', (req, res) => {
   const { amount, recipient } = req.body;
 
   let transaction = transactionPool
-    .existingTransaction({ inputAddress: wallet.publicKey });
+      .existingTransaction({ inputAddress: wallet.publicKey });
 
   try {
     if (transaction) {
@@ -123,6 +87,45 @@ app.post('/api/transact', (req, res) => {
   pubsub.broadcastTransaction(transaction);
 
   res.json({ type: 'success', transaction });
+
+
+});
+
+app.post('/api/odktransact', (req, res) => {
+  const { publickey } = req.body;
+  const newData = JSON.stringify(req.body);
+  const amount = 50;
+  const recipient = publickey;
+
+  let transaction = transactionPool
+      .existingTransaction({ inputAddress: wallet.publicKey });
+
+  try {
+    if (transaction) {
+      transaction.update({ senderWallet: wallet, recipient, amount });
+    } else {
+      transaction = wallet.createTransaction({
+        recipient,
+        amount,
+        chain: blockchain.chain
+      });
+    }
+  } catch(error) {
+    return res.status(400).json({ type: 'error', message: error.message });
+  }
+
+  transactionPool.setTransaction(transaction);
+
+  pubsub.broadcastTransactionODK(transaction,newData);
+
+  res.json({ type: 'success', transaction });
+
+  console.log(JSON.stringify(transaction).concat(newData));
+  transactionMiner.mineTransactions();
+
+ // res.redirect('/');
+
+
 });
 
 app.get('/api/transaction-pool-map', (req, res) => {
@@ -145,8 +148,8 @@ app.get('/api/wallet-info', (req, res) => {
 });
 
 app.post('/api/wallet-data', (req, res) => {
-  //const address = wallet.publicKey;
-  const address = "0536df828b033c21c58add846baf87775c2da1a0ad0995a207c5cc75907c2747940d11c32fc445688246d7b4fa3fd06b30e9100360ea52324151463e9430395323";
+  const { address } = req.body;
+  //const address = "0425eea8d797efbe817e889ec650a97a0c10b8f36d3eece6dde9b8326902ff054f5fb40c2482ef99027af93a0043646b0a078e2e2231ba995672bbd7f9e71221b7";
 
   res.json({
     address,
@@ -246,3 +249,5 @@ app.listen(PORT, () => {
     syncWithRootState();
   }
 });
+
+module.exports = wallet.publicKey;
