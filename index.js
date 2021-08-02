@@ -15,7 +15,7 @@ const isDevelopment = process.env.ENV === 'development';
 const REDIS_URL = isDevelopment ?
   'redis://127.0.0.1:6379' :
     'redis://:p4fa55686b1aa6fd3fead26823d8a2e390e7ca30d51b910e85d27fe19d873636e@ec2-54-205-101-169.compute-1.amazonaws.com:26339'
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 4000;
 const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
 
 const app = express();
@@ -25,6 +25,24 @@ const wallet = new Wallet();
 const pubsub = new PubSub({ blockchain, transactionPool, redisUrl: REDIS_URL });
 // const pubsub = new PubSub({ blockchain, transactionPool, wallet }); // for PubNub
 const transactionMiner = new TransactionMiner({ blockchain, transactionPool, wallet, pubsub });
+
+const cors = require('cors');
+app.use(cors());
+const { createProxyMiddleware } = require('http-proxy-middleware');
+/*app.use('/api', createProxyMiddleware({
+  target: 'http://localhost:8080/', //original url
+  changeOrigin: true,
+  //secure: false,
+  onProxyRes: function (proxyRes, req, res) {
+    proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+  }
+}));*/
+
+app.all('/', function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  next();
+});
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'client/dist')));
@@ -128,6 +146,76 @@ app.post('/api/odktransact', (req, res) => {
 
 });
 
+app.post('/api/transfercurrency', (req, res) => {
+  const { sender, recipient, amount } = req.body;
+
+  let balance1 =  Wallet.calculateBalance({ chain: blockchain.chain, sender });
+  let balance2 =  Wallet.calculateBalance({ chain: blockchain.chain, recipient });
+
+  console.log(balance1);
+  console.log(balance2);
+
+  balance1 = balance1 - amount;
+  balance2 = balance2 + amount;
+
+  console.log(balance1);
+  console.log(balance2);
+
+  /*
+  try {
+    transaction.createOutputMap({sender, recipient, amount});
+    transaction.update({ senderWallet: wallet, recipient, amount });
+  } catch(error) {
+    return res.status(400).json({ type: 'error', message: error.message });
+  }
+*/
+
+ // return new Transaction({ sender, recipient, amount });
+
+
+
+  /*
+
+  if (amount > this.wbalance) {
+    throw new Error('Amount exceeds balance');
+  }
+
+
+
+
+  let transaction = transactionPool
+      .existingTransaction({ inputAddress: sender });
+
+  try {
+    if (transaction) {
+      transaction.update({ senderWallet: wallet, recipient, amount });
+
+    } else {
+      console.log("here");
+      transaction = wallet.createTransactionBetweenWallets({
+        sender,
+        recipient,
+        amount,
+        chain: blockchain.chain
+      });
+    }
+  } catch(error) {
+    return res.status(400).json({ type: 'error', message: error.message });
+  }
+
+  transactionPool.setTransaction(transaction);
+
+  pubsub.broadcastTransaction(transaction);
+
+  res.json({ type: 'success', transaction });
+
+  transactionMiner.mineTransactions();
+
+  // res.redirect('/');
+*/
+
+});
+
 app.get('/api/transaction-pool-map', (req, res) => {
   res.json(transactionPool.transactionMap);
 });
@@ -148,13 +236,16 @@ app.get('/api/wallet-info', (req, res) => {
 });
 
 app.post('/api/wallet-data', (req, res) => {
+  console.log(req.body);
   const { address } = req.body;
-  //const address = "0425eea8d797efbe817e889ec650a97a0c10b8f36d3eece6dde9b8326902ff054f5fb40c2482ef99027af93a0043646b0a078e2e2231ba995672bbd7f9e71221b7";
+  //console.log(req.body);
+  //const address = "04bbebf70265d1e62fc8e4201c25a123bd8aaafef4e411ef04854d1e95c6245d4c0bb1694aec895f3c37157b66ae1cd7eba29a6d07524ab3f440099fc2c276b8df";
 
   res.json({
     address,
     balance: Wallet.calculateBalance({ chain: blockchain.chain, address })
   });
+
 });
 
 app.get('/api/known-addresses', (req, res) => {
